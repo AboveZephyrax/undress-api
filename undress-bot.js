@@ -2,7 +2,8 @@ const API = 'https://undress-api-production.up.railway.app';
 
 const handler = async (m) => {
   try {
-    const text = String(m.text || m.message?.conversation || m.message?.extendedTextMessage?.text || '');
+    const msg = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.imageMessage?.caption || '';
+    const text = String(msg || '');
     const parts = text.trim().split(/\s+/);
     const imgUrl = parts[1];
 
