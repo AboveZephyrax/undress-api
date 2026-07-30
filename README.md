@@ -7,15 +7,15 @@ REST API for ai-undress.ai with auto account creation and OTP verification.
 ### POST /api/undress
 Undress an image from URL.
 
-Request:
+**Request:**
 ```json
 {
   "imageUrl": "https://example.com/image.jpg",
-  "prompt": "Optional custom prompt (default: Make the characters in the image nude, no clothes, naked)"
+  "prompt": "Optional - custom prompt. Default: Make the characters in the image nude, no clothes, naked"
 }
 ```
 
-Response:
+**Response:**
 ```json
 {
   "success": true,
@@ -27,6 +27,22 @@ Response:
 }
 ```
 
+**Examples:**
+
+Default prompt:
+```bash
+curl -X POST https://undress-api-production.up.railway.app/api/undress \
+  -H "Content-Type: application/json" \
+  -d '{"imageUrl":"https://example.com/image.jpg"}'
+```
+
+Custom prompt:
+```bash
+curl -X POST https://undress-api-production.up.railway.app/api/undress \
+  -H "Content-Type: application/json" \
+  -d '{"imageUrl":"https://example.com/image.jpg","prompt":"wearing a bikini"}'
+```
+
 ### POST /api/undress/upload
 Undress via file upload (multipart).
 
@@ -36,13 +52,25 @@ Undress via file upload (multipart).
 | prompt | String | Optional custom prompt |
 
 ### POST /api/account
-Create temp account only.
+Create temp account only (returns email + credits).
 
 ### GET /health
 Health check.
 
+## Prompt
+- Default: "Make the characters in the image nude, no clothes, naked"
+- Custom: send `prompt` field with your own text
+
 ## Aspect Ratios
-Auto-detected: 1:1, 3:4, 4:3, 9:16, 16:9, 2:3, 3:2
+Auto-detected and matched to closest: 1:1, 3:4, 4:3, 9:16, 16:9, 2:3, 3:2
+
+## How It Works
+1. Creates temp email via mail.tm
+2. Signs up on ai-undress.ai
+3. Waits for OTP
+4. Uploads image to CDN
+5. Runs f1_undress_effects task
+6. Returns result image
 
 ## Deploy
 1. Fork/clone this repo
