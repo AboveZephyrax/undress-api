@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { createAccount, undressImage } from './undress.js';
+import { createAccount, undressImage, getPoseList } from './undress.js';
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -14,8 +14,12 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/', (req, res) => res.json({ ok: true, endpoints: ['/health', '/api/account', '/api/undress', '/api/undress/upload'] }));
+app.get('/', (req, res) => res.json({ ok: true, endpoints: ['/health', '/api/account', '/api/poses', '/api/undress', '/api/undress/upload'] }));
 app.get('/health', (req, res) => res.json({ ok: true }));
+
+app.get('/api/poses', (req, res) => {
+  res.json({ success: true, data: getPoseList() });
+});
 
 app.post('/api/account', async (req, res) => {
   try {
@@ -28,12 +32,12 @@ app.post('/api/account', async (req, res) => {
 
 app.post('/api/undress', async (req, res) => {
   try {
-    const { imageUrl, prompt } = req.body;
+    const { imageUrl, mode, pose, prompt } = req.body;
     if (!imageUrl) return res.status(400).json({ success: false, error: 'imageUrl required' });
 
     const acct = await createAccount();
     const img = Buffer.from(await (await fetch(imageUrl)).arrayBuffer());
-    const result = await undressImage(acct.session, acct.user_id, img, prompt);
+    const result = await undressImage(acct.session, acct.user_id, img, { mode, pose, prompt });
 
     res.json({
       success: true,
@@ -53,7 +57,7 @@ app.post('/api/undress/upload', upload.single('image'), async (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, error: 'image required' });
 
     const acct = await createAccount();
-    const result = await undressImage(acct.session, acct.user_id, req.file.buffer, req.body.prompt);
+    const result = await undressImage(acct.session, acct.user_id, req.file.buffer, { mode: req.body.mode, pose: req.body.pose, prompt: req.body.prompt });
 
     res.json({
       success: true,
