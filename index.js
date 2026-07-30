@@ -14,6 +14,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/', (req, res) => res.json({ ok: true, endpoints: ['/health', '/api/account', '/api/undress', '/api/undress/upload'] }));
 app.get('/health', (req, res) => res.json({ ok: true }));
 
 app.post('/api/account', async (req, res) => {
