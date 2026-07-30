@@ -153,7 +153,7 @@ export const undressImage = async (session, userId, imageBuf) => {
 
   const cdnUrl = 'https://cdn.treekee.com/ai-undress/' + path;
   const taskId = await trpc('/api/trpc/workflow.runTask?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=undress'), cookie: cookie(session) }, {
-    '0': { json: { businessType: 'sd_clothes_prompt_changer_auto_undress', const imgSize = getImageSize(imageBuf);
+  const imgSize = getImageSize(imageBuf);
   const apiParams = { url: cdnUrl };
   if (imgSize) { apiParams.width = imgSize.w; apiParams.height = imgSize.h; }
 
