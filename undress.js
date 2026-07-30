@@ -143,7 +143,7 @@ export const createAccount = async () => {
   return { email: mail.address, password: mail.password, credits: user.credits, user_id: user.id, session: sessionId.id };
 };
 
-export const undressImage = async (session, userId, imageBuf) => {
+export const undressImage = async (session, userId, imageBuf, prompt) => {
   const path = 'temp/' + userId + '/' + Date.now() + '/original.jpg';
   const signed = await trpc('/api/trpc/uploads.signedUploadUrl?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=undress'), cookie: cookie(session) }, { '0': { json: { path }, meta: { values: {} } } });
 
@@ -158,7 +158,7 @@ export const undressImage = async (session, userId, imageBuf) => {
     const ratios = [{"r":"1:1","v":1},{"r":"3:4","v":0.75},{"r":"4:3","v":1.3333333333333333},{"r":"9:16","v":0.5625},{"r":"16:9","v":1.7777777777777777},{"r":"2:3","v":0.6666666666666666},{"r":"3:2","v":1.5}];
     return ratios.reduce((a, b) => Math.abs(a.v - ar) < Math.abs(b.v - ar) ? a : b).r;
   })() : '1:1';
-  const apiParams = { url: cdnUrl, prompt: 'Make the characters in the image nude,no clothes, naked', imageQuality: 'HD', styleMode: false, aspectRatio };
+  const apiParams = { url: cdnUrl, prompt: prompt || 'Make the characters in the image nude,no clothes, naked', imageQuality: 'HD', styleMode: false, aspectRatio };
   const taskId = await trpc('/api/trpc/workflow.runTask?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=sex-pose'), cookie: cookie(session) }, {
     '0': { json: { businessType: 'f1_undress_effects', apiParams }, meta: { values: {} } }
   });
