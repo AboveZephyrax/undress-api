@@ -105,7 +105,9 @@ const httpsReq = (host, port, path, method, headers, body) => {
     const h = { ...headers };
     if (body) h['content-length'] = Buffer.byteLength(body);
     const chunks = [];
-    const req = mod.request({ hostname: host, port, path, method, rejectUnauthorized: false, headers: h }, (res) => {
+    const opts = { hostname: host, port, path, method, rejectUnauthorized: false, headers: h };
+    if (port === 443) opts.servername = 'ai-undress.ai';
+    const req = mod.request(opts, (res) => {
       res.on('data', c => chunks.push(c));
       res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks), url: res.headers.location || '' }));
     });
@@ -195,6 +197,8 @@ export const createAccount = async () => {
 
   const otpPath = '/id/auth/otp?type=SIGNUP&redirectTo=%2F&identifier=' + encodeURIComponent(mail.address);
   await httpsReq(TARGET_IP, 443, otpPath, 'GET', { Host: 'ai-undress.ai', 'User-Agent': 'Mozilla/5.0', Cookie: cookie() });
+  // Also trigger via trpc as backup
+  try { await trpc('/api/trpc/auth.sendOtp?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: TARGET + otpPath, cookie: cookie() }, { '0': { json: { type: 'SIGNUP', identifier: mail.address }, meta: { values: {} } } }); } catch (e) {}
   await new Promise(r => setTimeout(r, 3000));
 
   const sessionId = await trpc('/api/trpc/auth.verifyOtp?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref(otpPath), cookie: cookie() }, {
