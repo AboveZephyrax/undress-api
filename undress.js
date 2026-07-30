@@ -106,7 +106,7 @@ const httpsReq = (host, port, path, method, headers, body) => {
     if (body) h['content-length'] = Buffer.byteLength(body);
     const chunks = [];
     const opts = { hostname: host, port, path, method, rejectUnauthorized: false, headers: h };
-    if (port === 443) opts.servername = 'ai-undress.ai';
+    if (host === '216.150.1.1' || host === 'ai-undress.ai') opts.servername = 'ai-undress.ai';
     const req = mod.request(opts, (res) => {
       res.on('data', c => chunks.push(c));
       res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks), url: res.headers.location || '' }));
