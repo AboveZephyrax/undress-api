@@ -11,6 +11,30 @@ const rand = (n) => {
   return r;
 };
 
+
+const getImageSize = (buf) => {
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) {
+    return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+  }
+  if (buf[0] === 0xFF && buf[1] === 0xD8) {
+    let i = 2;
+    while (i < buf.length - 1) {
+      if (buf[i] !== 0xFF) { i++; continue; }
+      const m = buf[i + 1];
+      if ((m >= 0xC0 && m <= 0xC3) || (m >= 0xC5 && m <= 0xC7) || (m >= 0xC9 && m <= 0xCB) || (m >= 0xCD && m <= 0xCF)) {
+        return { w: buf.readUInt16BE(i + 7), h: buf.readUInt16BE(i + 5) };
+      }
+      if (m === 0xD9 || m === 0xDA) break;
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+  }
+  if (buf.readUInt32BE(0) === 0x52494646 && buf.readUInt32BE(8) === 0x57454250) {
+    if (buf[15] === 0x20) return { w: buf.readUInt16LE(26) & 0x3FFF, h: buf.readUInt16LE(28) & 0x3FFF };
+    if (buf[15] === 0x4C) { const s = buf.readUInt32LE(18); return { w: (s & 0x3FFF) + 1, h: ((s >> 14) & 0x3FFF) + 1 }; }
+  }
+  return null;
+};
+
 const httpsReq = (host, port, path, method, headers, body) => {
   return new Promise((resolve, reject) => {
     const mod = port === 443 ? https : http;
@@ -129,7 +153,12 @@ export const undressImage = async (session, userId, imageBuf) => {
 
   const cdnUrl = 'https://cdn.treekee.com/ai-undress/' + path;
   const taskId = await trpc('/api/trpc/workflow.runTask?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=undress'), cookie: cookie(session) }, {
-    '0': { json: { businessType: 'sd_clothes_prompt_changer_auto_undress', apiParams: { url: cdnUrl } }, meta: { values: {} } }
+    '0': { json: { businessType: 'sd_clothes_prompt_changer_auto_undress', const imgSize = getImageSize(imageBuf);
+  const apiParams = { url: cdnUrl };
+  if (imgSize) { apiParams.width = imgSize.w; apiParams.height = imgSize.h; }
+
+  const taskId = await trpc('/api/trpc/workflow.runTask?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=undress'), cookie: cookie(session) }, {
+    '0': { json: { businessType: 'sd_clothes_prompt_changer_auto_undress', apiParams }, meta: { values: {} } }
   });
 
   for (let i = 0; i < 60; i++) {
