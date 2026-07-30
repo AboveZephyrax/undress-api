@@ -5,12 +5,76 @@ const MAIL_API = 'https://api.mail.tm';
 const TARGET = 'https://ai-undress.ai';
 const TARGET_IP = '216.150.1.1';
 
+const POSES = {
+  undress: {
+    undress:         { bt: 'sd_clothes_prompt_changer_auto_undress',           label: 'Undress' },
+    bigBreasts:      { bt: 'sd_clothes_prompt_changer_auto_breast_enlargement', label: 'Big Breasts' },
+    pregnant:        { bt: 'sd_clothes_prompt_changer_auto_pregnancy',          label: 'Pregnant' },
+    wedding:         { bt: 'sd_clothes_prompt_changer_auto_wedding_dress',      label: 'Wedding' },
+    maid:            { bt: 'sd_clothes_prompt_changer_auto_maid_outfit',        label: 'Maid' },
+    jk:              { bt: 'sd_clothes_prompt_changer_auto_jk_uniform',         label: 'JK' },
+    slim:            { bt: 'sd_clothes_prompt_changer_auto_thin',               label: 'Slim' },
+    curvy:           { bt: 'sd_clothes_prompt_changer_auto_fat',                label: 'Curvy' },
+    lingerie:        { bt: 'sd_lingerie_with_auto',                             label: 'Lingerie' },
+    towel:           { bt: 'sd_towel_with_auto',                                label: 'Towel' },
+    chineseDress:    { bt: 'sd_chinese_dress_with_auto',                        label: 'Chinese Dress' },
+    bandeau:         { bt: 'sd_bandeau_with_auto',                              label: 'Bandeau' },
+    microBikini:     { bt: 'sd_mini_micro_bikini_with_auto',                    label: 'Micro Bikini' },
+    tattoo:          { bt: 'sd_tattoo_with_auto',                               label: 'Tattoo' },
+    schoolSwimsuit:  { bt: 'sd_school_swimsuit_with_auto',                      label: 'School Swimsuit' },
+    leatherBikini:   { bt: 'sd_leather_bikini_with_auto',                       label: 'Leather Bikini' },
+    microBikiniTattoo:{ bt: 'sd_mini_micro_bikini_tattoo_with_auto',            label: 'Micro Bikini Tattoo' },
+    animation:       { bt: 'sd_animation_auto',                                 label: 'Anime Style' },
+  },
+  'sex-pose': {
+    orgasmFace:      { bt: 'sd_orgasm_face_with_auto',       label: 'Orgasm Face',
+      dp: 'nude,no clothes, naked and orgasm face,female orgasm,orgasm, solo, open mouth, Expression of enjoyment' },
+    cumFace:         { bt: 'sd_cum_face_with_auto',          label: 'Cum Face',
+      dp: 'nude,no clothes, naked and cum on face and neck, covered in cum, cum in mouth, cum on tongue, cum on tits, cum on neck and collarbones, facial cumshot, cum on cleavage, mouth open, Ahegao' },
+    cumOnClothes:    { bt: 'sd_cum_on_clothes_with_auto',    label: 'Cum on Clothes',
+      dp: 'cum on characters clothes and neck, cum on cleavage' },
+    mouthCum:        { bt: 'sd_mouth_cum_with_auto',         label: 'Mouth Cum',
+      dp: 'open mouth, cum in mouth, cum on tongue, tongue out, cum' },
+    pussyHair:       { bt: 'sd_pussy_hair_with_auto',        label: 'Pussy Hair',
+      dp: 'nude,no clothes, naked and lying on her back with both knees bent, female pubic hair' },
+    ballGag:         { bt: 'sd_gagged_mouth_with_auto',      label: 'Ball Gag',
+      dp: 'nude,no clothes, naked and ball gag, gagged mouth' },
+    bondage:         { bt: 'sd_bondage_with_auto',           label: 'Bondage',
+      dp: 'nude,no clothes, naked and shibari, japanese bondage, rope' },
+    chainTraction:   { bt: 'sd_chain_traction_with_auto',    label: 'Chain Traction',
+      dp: 'nude,no clothes, naked and on a leash, wearing a collar around her neck' },
+    nudeApron:       { bt: 'sd_nude_apron_with_auto',        label: 'Nude Apron',
+      dp: 'Replace the clothes of the people in the image with a Apron, naked, personality, kitchen style, bare skin' },
+    wetShirt:        { bt: 'sd_wet_shirt_with_auto',         label: 'Wet Shirt',
+      dp: 'Replace the clothes of the people in the image with a sheer see through wet white shirt' },
+    milkBath:        { bt: 'sd_milk_bath_with_auto',         label: 'Milk Bath',
+      dp: 'nude,no clothes, naked in a bathtub, MilkyBathe, Bathtub, Milk Bath' },
+    crotchlessPants: { bt: 'sd_open_crotch_pantyhose_auto',  label: 'Crotchless Pants',
+      dp: 'Replace the clothes with crotchless pants, crotchless pantyhose' },
+    fingering:       { bt: 'sd_fingering_auto',              label: 'Fingering',
+      dp: 'nude,no clothes, naked lying in bed, Insert 2 two fingers of her right hand into her vagina' },
+    cumBody:         { bt: 'sd_naked_body_auto',             label: 'Cum Body',
+      dp: 'nude,no clothes, naked and cum on characters body, cum on characters pussy' },
+    nippleClamps:    { bt: 'sd_nipple_clamps_with_auto',     label: 'Nipple Clamps',
+      dp: 'nude,no clothes, naked and with breastclamp, nipple clamps' },
+  }
+};
+
+const ALL_POSES = {};
+for (const [mode, poses] of Object.entries(POSES)) {
+  for (const [key, val] of Object.entries(poses)) {
+    val.key = key;
+    val.mode = mode;
+    ALL_POSES[key] = val;
+    ALL_POSES[mode + '/' + key] = val;
+  }
+}
+
 const rand = (n) => {
   let r = '';
   for (let i = 0; i < n; i++) r += 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)];
   return r;
 };
-
 
 const getImageSize = (buf) => {
   if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) {
@@ -103,7 +167,7 @@ const waitOtp = async (token) => {
     if (list.length) {
       const m = await (await fetch(MAIL_API + '/messages/' + list[0].id, { headers: { authorization: 'Bearer ' + token } })).json();
       const txt = [m.subject, m.text, (m.html?.[0] || '').replace(/<[^>]*>/g, ' ')].filter(Boolean).join(' ');
-      const otp = txt.match(/\b(\d{6})\b/);
+      const otp = txt.match(/(d{6})/);
       if (otp) return otp[1];
     }
     await new Promise(r => setTimeout(r, 3000));
@@ -143,9 +207,28 @@ export const createAccount = async () => {
   return { email: mail.address, password: mail.password, credits: user.credits, user_id: user.id, session: sessionId.id };
 };
 
-export const undressImage = async (session, userId, imageBuf, prompt) => {
+const NEEDS_POSE = {
+  sd_clothes_prompt_changer_auto_undress: 1,
+  sd_clothes_prompt_changer_auto_breast_enlargement: 1,
+  sd_clothes_prompt_changer_auto_pregnancy: 1,
+  sd_clothes_prompt_changer_auto_wedding_dress: 1,
+  sd_clothes_prompt_changer_auto_maid_outfit: 1,
+  sd_clothes_prompt_changer_auto_jk_uniform: 1,
+  sd_clothes_prompt_changer_auto_thin: 1,
+  sd_clothes_prompt_changer_auto_fat: 1,
+};
+
+export const getPoseList = () => POSES;
+
+export const undressImage = async (session, userId, imageBuf, opts = {}) => {
+  const { mode = 'undress', pose: poseKey = 'undress', prompt } = opts;
+  const modePoses = POSES[mode];
+  if (!modePoses) throw new Error('Invalid mode: ' + mode + '. Must be undress or sex-pose');
+  const poseDef = modePoses[poseKey];
+  if (!poseDef) throw new Error('Invalid pose: ' + poseKey + ' for mode: ' + mode);
+
   const path = 'temp/' + userId + '/' + Date.now() + '/original.jpg';
-  const signed = await trpc('/api/trpc/uploads.signedUploadUrl?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=undress'), cookie: cookie(session) }, { '0': { json: { path }, meta: { values: {} } } });
+  const signed = await trpc('/api/trpc/uploads.signedUploadUrl?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=' + mode), cookie: cookie(session) }, { '0': { json: { path }, meta: { values: {} } } });
 
   const up = new URL(signed);
   const upload = await httpsReq(up.hostname, 443, up.pathname + up.search, 'PUT', { 'Content-Type': 'image/jpeg', 'user-agent': 'Mozilla/5.0' }, imageBuf);
@@ -158,13 +241,22 @@ export const undressImage = async (session, userId, imageBuf, prompt) => {
     const ratios = [{"r":"1:1","v":1},{"r":"3:4","v":0.75},{"r":"4:3","v":1.3333333333333333},{"r":"9:16","v":0.5625},{"r":"16:9","v":1.7777777777777777},{"r":"2:3","v":0.6666666666666666},{"r":"3:2","v":1.5}];
     return ratios.reduce((a, b) => Math.abs(a.v - ar) < Math.abs(b.v - ar) ? a : b).r;
   })() : '1:1';
-  const apiParams = { url: cdnUrl, pose: 'sd_clothes_prompt_changer_auto_undress', prompt: prompt || '', imageQuality: 'HD', styleMode: false, aspectRatio, featureSlug: 'undress' };
-  const taskId = await trpc('/api/trpc/workflow.runTask?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=undress'), cookie: cookie(session) }, {
-    '0': { json: { businessType: 'sd_clothes_prompt_changer_auto_undress', apiParams }, meta: { values: {} } }
+
+  let businessType = poseDef.bt;
+  let apiParams;
+
+  if (NEEDS_POSE[businessType]) {
+    apiParams = { url: cdnUrl, pose: businessType, prompt: prompt ?? '', imageQuality: 'HD', styleMode: false, aspectRatio, featureSlug: 'undress' };
+  } else {
+    apiParams = { url: cdnUrl, prompt: prompt ?? poseDef.dp ?? 'nude,no clothes, naked', imageQuality: 'HD', styleMode: false, aspectRatio };
+  }
+
+  const taskId = await trpc('/api/trpc/workflow.runTask?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=' + mode), cookie: cookie(session) }, {
+    '0': { json: { businessType, apiParams }, meta: { values: {} } }
   });
 
   for (let i = 0; i < 60; i++) {
-    const r = await trpc('/api/trpc/workflow.getOrderTaskResult?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=undress'), cookie: cookie(session) }, { '0': { json: { taskId: taskId.taskId }, meta: { values: {} } } });
+    const r = await trpc('/api/trpc/workflow.getOrderTaskResult?batch=1', { 'x-trpc-source': 'client', origin: TARGET, referer: ref('/id/editor?type=' + mode), cookie: cookie(session) }, { '0': { json: { taskId: taskId.taskId }, meta: { values: {} } } });
     if (r.status === 'COMPLETED') {
       const u = new URL(r.result_url);
       const dl = await httpsReq(u.hostname, u.protocol === 'https:' ? 443 : 80, u.pathname + u.search, 'GET', {});
