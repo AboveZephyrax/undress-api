@@ -1,19 +1,40 @@
+import { uploader } from '../lib/uploader.js';
+
 const API = 'https://undress-api-production.up.railway.app';
 
-const handler = async (m, { conn, text }) => {
+const handler = async (m, { conn, text, usedPrefix, command }) => {
   try {
-    const imgUrl = text?.trim();
+    let imgUrl = null;
+    let prompt = null;
 
-    if (!imgUrl || !imgUrl.startsWith('http')) {
-      m.reply('Usage: .aiundress <image_url>');
-      return;
+    if (m.mtype === 'imageMessage') {
+      const buffer = await m.download();
+      imgUrl = await uploader(buffer);
+      prompt = text?.trim() || null;
+    } else if (m.quoted?.mtype === 'imageMessage') {
+      const buffer = await m.quoted.download();
+      imgUrl = await uploader(buffer);
+      prompt = text?.trim() || null;
+    } else if (text?.trim().startsWith('http')) {
+      const parts = text.trim().split(/\s+/);
+      imgUrl = parts[0];
+      prompt = parts.slice(1).join(' ') || null;
     }
 
-    m.reply('Processing...');
+    if (!imgUrl) {
+      m.reply(`_*Usage:*_ ${usedPrefix}${command} [url] [prompt]`);
+      return;
+    }
+    
+    await m.reply('_*Processing naked . . .*_');
+    
+    const body = { imageUrl: imgUrl };
+    if (prompt) body.prompt = prompt;
+
     const res = await fetch(`${API}/api/undress`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl: imgUrl })
+      body: JSON.stringify(body)
     });
 
     const raw = await res.text();
@@ -21,19 +42,20 @@ const handler = async (m, { conn, text }) => {
     try { data = JSON.parse(raw); } catch { data = null; }
 
     if (!data || !data.success) {
-      m.reply(`Error: ${data?.error || 'API unreachable, try again'}`);
+      m.reply(`Error: ${data?.error || 'API unreachable'}`);
       return;
     }
 
     const img = Buffer.from(data.data.image_base64, 'base64');
-    await conn.sendFile(m.chat, img, 'result.jpg', 'Done!', m);
+    await conn.sendFile(m.chat, img, 'result.jpg', '', m);
   } catch (e) {
     m.reply(`Error: ${e.message || 'Unknown'}`);
   }
 };
 
-handler.help = ['aiundress'];
-handler.tags = ['tools'];
-handler.command = ['aiundress'];
+handler.help = ['bugil *( kirim gambar )*'];
+handler.tags = ['ai-nsfw'];
+handler.command = ['undres', 'undress', 'naked', 'bugil', 'tobugil', 'bugilin', 'telanjang', 'telanjangin'];
+handler.owner = true;
 
 export default handler;
