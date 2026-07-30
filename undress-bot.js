@@ -2,9 +2,9 @@ const API = 'https://undress-api-production.up.railway.app';
 
 const handler = async (m) => {
   try {
-    const text = m.text || '';
-    const args = text.split(' ');
-    const imgUrl = args[1];
+    const text = String(m.text || m.message?.conversation || m.message?.extendedTextMessage?.text || '');
+    const parts = text.trim().split(/\s+/);
+    const imgUrl = parts[1];
 
     if (!imgUrl || !imgUrl.startsWith('http')) {
       m.reply('Usage: .aiundress <image_url>');
