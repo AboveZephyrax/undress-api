@@ -169,7 +169,7 @@ const waitOtp = async (token) => {
     if (list.length) {
       const m = await (await fetch(MAIL_API + '/messages/' + list[0].id, { headers: { authorization: 'Bearer ' + token } })).json();
       const txt = [m.subject, m.text, (m.html?.[0] || '').replace(/<[^>]*>/g, ' ')].filter(Boolean).join(' ');
-      const otp = txt.match(/(d{6})/);
+      const otp = txt.match(/\b(\d{6})\b/);
       if (otp) return otp[1];
     }
     await new Promise(r => setTimeout(r, 3000));
