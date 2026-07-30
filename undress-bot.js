@@ -1,11 +1,8 @@
 const API = 'https://undress-api-production.up.railway.app';
 
-const handler = async (m) => {
+const handler = async (m, { conn, text }) => {
   try {
-    const msg = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.imageMessage?.caption || '';
-    const text = String(msg || '');
-    const parts = text.trim().split(/\s+/);
-    const imgUrl = parts[1];
+    const imgUrl = text?.trim();
 
     if (!imgUrl || !imgUrl.startsWith('http')) {
       m.reply('Usage: .aiundress <image_url>');
@@ -24,12 +21,12 @@ const handler = async (m) => {
     try { data = JSON.parse(raw); } catch { data = null; }
 
     if (!data || !data.success) {
-      m.reply(`Error: ${data?.error || 'API unreachable, try again in 30s'}`);
+      m.reply(`Error: ${data?.error || 'API unreachable, try again'}`);
       return;
     }
 
     const img = Buffer.from(data.data.image_base64, 'base64');
-    await m.reply({ image: img, caption: 'Done!' });
+    await conn.sendFile(m.chat, img, 'result.jpg', 'Done!', m);
   } catch (e) {
     m.reply(`Error: ${e.message || 'Unknown'}`);
   }
