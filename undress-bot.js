@@ -1,4 +1,4 @@
-import { createAccount, undressImage } from './undress.js';
+const API = 'https://undress-api-production.up.railway.app';
 
 const handler = async (m) => {
   try {
@@ -6,34 +6,26 @@ const handler = async (m) => {
     const args = text.split(' ');
     const imgUrl = args[1];
 
-    if (imgUrl && imgUrl.startsWith('http')) {
-      m.reply('Creating account...');
-      const acct = await createAccount();
-      m.reply('Downloading image...');
-      const img = Buffer.from(await (await fetch(imgUrl)).arrayBuffer());
-      m.reply('Processing undress...');
-      const result = await undressImage(acct.session, acct.user_id, img);
-      await m.reply({ image: result.buffer, caption: 'Done!' });
+    if (!imgUrl || !imgUrl.startsWith('http')) {
+      m.reply('Usage: .aiundress <image_url>');
       return;
     }
 
-    const isImage = m.quoted?.message?.imageMessage || m.quoted?.message?.ptvMessage;
-    if (isImage) {
-      m.reply('Creating account...');
-      const acct = await createAccount();
-      m.reply('Downloading image...');
-      const stream = await m.quoted.download();
-      const chunks = [];
-      for await (const chunk of stream) chunks.push(chunk);
-      const img = Buffer.concat(chunks);
-      m.reply('Processing undress...');
-      const result = await undressImage(acct.session, acct.user_id, img);
-      await m.reply({ image: result.buffer, caption: 'Done!' });
+    m.reply('Processing...');
+    const res = await fetch(`${API}/api/undress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageUrl: imgUrl })
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      m.reply(`Error: ${data.error}`);
       return;
     }
 
-    const acct = await createAccount();
-    m.reply(`Account: ${acct.email}\nCredits: ${acct.credits}\n\nReply to image with .aiundress`);
+    const img = Buffer.from(data.data.image_base64, 'base64');
+    await m.reply({ image: img, caption: 'Done!' });
   } catch (e) {
     m.reply(`Error: ${e.message}`);
   }
