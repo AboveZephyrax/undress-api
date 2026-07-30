@@ -18,17 +18,20 @@ const handler = async (m) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageUrl: imgUrl })
     });
-    const data = await res.json();
 
-    if (!data.success) {
-      m.reply(`Error: ${data.error}`);
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); } catch { data = null; }
+
+    if (!data || !data.success) {
+      m.reply(`Error: ${data?.error || 'API unreachable, try again in 30s'}`);
       return;
     }
 
     const img = Buffer.from(data.data.image_base64, 'base64');
     await m.reply({ image: img, caption: 'Done!' });
   } catch (e) {
-    m.reply(`Error: ${e.message}`);
+    m.reply(`Error: ${e.message || 'Unknown'}`);
   }
 };
 
