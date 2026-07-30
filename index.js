@@ -28,12 +28,12 @@ app.post('/api/account', async (req, res) => {
 
 app.post('/api/undress', async (req, res) => {
   try {
-    const { imageUrl } = req.body;
+    const { imageUrl, prompt } = req.body;
     if (!imageUrl) return res.status(400).json({ success: false, error: 'imageUrl required' });
 
     const acct = await createAccount();
     const img = Buffer.from(await (await fetch(imageUrl)).arrayBuffer());
-    const result = await undressImage(acct.session, acct.user_id, img);
+    const result = await undressImage(acct.session, acct.user_id, img, prompt);
 
     res.json({
       success: true,
@@ -53,7 +53,7 @@ app.post('/api/undress/upload', upload.single('image'), async (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, error: 'image required' });
 
     const acct = await createAccount();
-    const result = await undressImage(acct.session, acct.user_id, req.file.buffer);
+    const result = await undressImage(acct.session, acct.user_id, req.file.buffer, req.body.prompt);
 
     res.json({
       success: true,
