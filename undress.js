@@ -178,7 +178,7 @@ const waitOtp = async (token) => {
 };
 
 const getCfToken = async () => {
-  const res = await fetch('https://api.blckrose.my.id/bypass/turnstile-min?url=' + encodeURIComponent(TARGET) + '&siteKey=0x4AAAAAADPFLZJFuHj6IioC&apikey=abovezephyrax');
+  const res = await fetch('https://api.theresav.biz.id/bypass/turnstile-min?url=' + encodeURIComponent(TARGET) + '&siteKey=0x4AAAAAADPFLZJFuHj6IioC&apikey=abovezephyrax');
   const d = await res.json();
   return d.token || d.result?.token || d.result;
 };
